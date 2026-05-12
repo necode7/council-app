@@ -98,13 +98,13 @@ export default function Home() {
           </nav>
           <div className="ml-auto flex items-center gap-1">
             <a
-              href="#"
+              href="/login"
               className="hidden sm:inline-flex text-sm px-3 py-1.5 rounded-full hover:bg-white/5 transition text-slate-300"
             >
               Sign in
             </a>
             <a
-              href="#pricing"
+              href="/signup"
               className="text-sm font-medium btn-primary text-white px-4 py-1.5 rounded-full"
             >
               Start free
@@ -144,7 +144,7 @@ export default function Home() {
 
           <div className="reveal mt-10 flex flex-col sm:flex-row items-center justify-center gap-3">
             <a
-              href="#pricing"
+              href="/signup"
               className="btn-primary text-white font-medium px-6 py-3 rounded-full inline-flex items-center gap-2"
             >
               Start free
@@ -519,7 +519,7 @@ export default function Home() {
                   </li>
                 ))}
               </ul>
-              <a href="#" className="btn-ghost mt-8 text-center font-medium px-5 py-3 rounded-full">
+              <a href="/signup" className="btn-ghost mt-8 text-center font-medium px-5 py-3 rounded-full">
                 Start free
               </a>
             </div>
@@ -559,7 +559,7 @@ export default function Home() {
                 ))}
               </ul>
               <a
-                href="#"
+                href="/signup"
                 className="btn-primary mt-8 text-center text-white font-medium px-5 py-3 rounded-full"
               >
                 Upgrade to Pro
@@ -593,7 +593,7 @@ export default function Home() {
                   </li>
                 ))}
               </ul>
-              <a href="#" className="btn-ghost mt-8 text-center font-medium px-5 py-3 rounded-full">
+              <a href="/signup" className="btn-ghost mt-8 text-center font-medium px-5 py-3 rounded-full">
                 Start Team trial
               </a>
             </div>
@@ -629,7 +629,7 @@ export default function Home() {
                 </p>
               </div>
               <a
-                href="#"
+                href="/signup"
                 className="btn-primary text-white font-medium px-6 py-3 rounded-full inline-flex items-center gap-2 shrink-0"
               >
                 Start free
