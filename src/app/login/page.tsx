@@ -73,7 +73,7 @@ export default function LoginPage() {
         <section className="w-full rounded-2xl border border-white/10 bg-[#0f0c20]/90 p-7 shadow-2xl shadow-violet-950/30 backdrop-blur">
           <div className="mb-7 text-center">
             <div className="mx-auto mb-4 flex h-10 w-10 items-center justify-center rounded-xl border border-violet-400/30 bg-violet-500/10">
-              <span className="mono text-sm text-violet-200">C</span>
+              <span className="mono text-sm text-violet-200">M</span>
             </div>
             <h1 className="text-2xl font-semibold tracking-tight text-white">
               Sign in to Council
