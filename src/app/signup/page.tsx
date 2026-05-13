@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import type { FormEvent } from 'react'
 import { useState } from 'react'
 import toast from 'react-hot-toast'
@@ -10,6 +10,8 @@ import { supabase } from '@/lib/supabase/client'
 
 export default function SignupPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const referralCode = searchParams.get('ref') || ''
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -20,10 +22,15 @@ export default function SignupPage() {
     try {
       setIsGoogleLoading(true)
 
+      // Pass referral code through redirect URL so callback can apply it
+      const redirectUrl = referralCode
+        ? `${window.location.origin}/auth/callback?ref=${encodeURIComponent(referralCode)}`
+        : `${window.location.origin}/auth/callback`
+
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
+          redirectTo: redirectUrl,
         },
       })
 
@@ -52,6 +59,15 @@ export default function SignupPage() {
       })
 
       if (error) throw error
+
+      // Apply referral code if present
+      if (referralCode) {
+        await fetch('/api/referral/apply', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ referral_code: referralCode }),
+        }).catch(() => {})
+      }
 
       toast.success('Account created successfully')
       router.push('/dashboard')

@@ -168,7 +168,7 @@ export default async function DashboardHome() {
             {recentDecisions.map((decision) => (
               <Link
                 key={decision.id}
-                href={`/dashboard/decisions/${decision.id}`}
+                href={`/dashboard/council/${decision.id}`}
                 className="block bg-slate-800/50 border border-slate-700 rounded-lg p-4 hover:border-purple-500/50 hover:bg-slate-800/80 transition-all group"
               >
                 <div className="flex items-start justify-between">

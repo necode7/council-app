@@ -23,6 +23,8 @@ import {
   SLUGGER_USER,
   inject,
 } from '@/lib/council/prompts';
+import { buildMemoryBlock } from '@/lib/memory/context';
+import { saveDecisionEmbedding } from '@/lib/memory/store';
 
 // ============================================================
 // Types
@@ -48,7 +50,7 @@ export interface CouncilResult {
   verdict: string;
 }
 
-export type PipelineStage = 'slug' | 'advisors' | 'review' | 'chairman' | 'complete' | 'error';
+export type PipelineStage = 'slug' | 'memory' | 'advisors' | 'review' | 'chairman' | 'complete' | 'error';
 
 // ============================================================
 // 1. Generate Topic Slug
@@ -91,9 +93,15 @@ export async function generateTopicSlug(question: string): Promise<string> {
 export async function runAdvisors(
   question: string,
   advisorPanel: AdvisorPanel[] | null,
+  memoryBlock?: string,
 ): Promise<Record<string, string>> {
   // Use provided panel or fall back to defaults
   const panel: AdvisorPersona[] = resolveAdvisorPanel(advisorPanel);
+
+  // Prepend memory context to the user message (not system prompt)
+  const userMessage = memoryBlock
+    ? `${memoryBlock}\n\n${question}`
+    : question;
 
   // Each advisor gets a different model from the advisors array
   const results = await Promise.allSettled(
@@ -102,7 +110,7 @@ export async function runAdvisors(
       const response = await callModel({
         model,
         system: advisor.systemPrompt + ADVISOR_SUFFIX,
-        user: question,
+        user: userMessage,
         temperature: 0.7,
         maxTokens: 2048,
         label: `${advisor.name} (${model.split('/')[1]})`,
@@ -255,41 +263,69 @@ export interface CouncilTemplate {
   chairman_prompt?: string | null;
 }
 
+export interface CouncilOptions {
+  userId?: string;
+  councilId?: string;
+}
+
 /**
  * Orchestrates the full council deliberation pipeline.
  *
  * @param question      - The user's question / decision
  * @param template      - Optional template with custom advisor_panel and chairman_prompt
  * @param onProgress    - Callback fired at each pipeline stage
+ * @param options       - Optional userId/councilId for memory retrieval and embedding storage
  * @returns             - The complete CouncilResult
  */
 export async function runCouncil(
   question: string,
   template: CouncilTemplate | null,
   onProgress?: (stage: PipelineStage) => void,
+  options?: CouncilOptions,
 ): Promise<CouncilResult> {
   try {
     // --- Stage 1: Generate topic slug ---
     onProgress?.('slug');
     const slug = await generateTopicSlug(question);
 
-    // --- Stage 2: Run advisors in parallel ---
+    // --- Stage 2: Retrieve user memory ---
+    let memoryBlock = '';
+    if (options?.userId) {
+      onProgress?.('memory');
+      try {
+        memoryBlock = await buildMemoryBlock(options.userId, question);
+      } catch (err) {
+        console.error('[runCouncil] memory retrieval failed, continuing without:', err);
+      }
+    }
+
+    // --- Stage 3: Run advisors in parallel ---
     onProgress?.('advisors');
     const advisorPanel = template?.advisor_panel ?? null;
-    const advisorResponses = await runAdvisors(question, advisorPanel);
+    const advisorResponses = await runAdvisors(
+      question,
+      advisorPanel,
+      memoryBlock || undefined,
+    );
 
-    // --- Stage 3: Anonymize + Peer Review ---
+    // --- Stage 4: Anonymize + Peer Review ---
     onProgress?.('review');
     const anonymized = anonymize(advisorResponses);
     const advisorNames = Object.keys(advisorResponses);
     const reviews = await runPeerReview(advisorNames, anonymized, question);
 
-    // --- Stage 4: Chairman verdict ---
+    // --- Stage 5: Chairman verdict ---
     onProgress?.('chairman');
     const chairmanPrompt = template?.chairman_prompt ?? undefined;
     const verdict = await runChairman(question, advisorResponses, reviews, chairmanPrompt);
 
     onProgress?.('complete');
+
+    // --- Post-pipeline: store embedding for future memory (fire-and-forget) ---
+    if (options?.userId && options?.councilId) {
+      saveDecisionEmbedding(options.councilId, options.userId, question, verdict)
+        .catch((err) => console.error('[runCouncil] embedding save failed:', err));
+    }
 
     return {
       slug,
